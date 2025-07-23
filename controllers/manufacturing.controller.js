@@ -143,9 +143,9 @@ export const getAllProductsUnits = async (req, res) => {
       .populate("product", "name code")
       .sort({ date_produced: -1 });
 
-    if (units.length === 0) {
-      return res.status(404).json({ message: "لا توجد وحدات منتجات" });
-    }
+    // if (units.length === 0) {
+    //   return res.status(404).json({ message: "لا توجد وحدات منتجات" });
+    // }
     const totalUnits = units.length;
 
     res.status(200).json({
