@@ -1,4 +1,4 @@
-import Component from "../models/Component.model.js";
+import Component from "../models/component.model.js";
 import ComponentMovement from "../models/componentMovement.model.js";
 import { handleImageUpload } from "../utils/uploadHandler.js";
 // إنشاء مكون جديد

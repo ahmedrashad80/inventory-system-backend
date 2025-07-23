@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Product from "../models/product.model.js";
-import Component from "../models/Component.model.js";
+import Component from "../models/component.model.js";
 import ComponentMovement from "../models/componentMovement.model.js";
 import ManufacturingRecord from "../models/ManufacturingRecord.model.js";
 import ProductUnit from "../models/productUnit.model.js";
