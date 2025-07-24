@@ -47,14 +47,12 @@ export const updateUserLogin = async (req, res) => {
 };
 
 export const logout = (req, res) => {
-  app.post("/api/user/logout", (req, res) => {
-    res.clearCookie("token", {
-      httpOnly: true,
-      sameSite: "None",
-      secure: true,
-    });
-    res.status(200).json({ message: "تم تسجيل الخروج بنجاح" });
+  res.clearCookie("token", {
+    httpOnly: true,
+    sameSite: "None",
+    secure: true,
   });
+  res.status(200).json({ message: "تم تسجيل الخروج بنجاح" });
 };
 
 export const verifyToken = (req, res) => {
