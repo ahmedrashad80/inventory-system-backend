@@ -4,6 +4,7 @@ import {
   login,
   updateUserLogin,
   logout,
+  verifyToken,
 } from "../controllers/login.controllers.js";
 
 const router = express.Router();
@@ -11,5 +12,6 @@ const router = express.Router();
 router.post("/login", login);
 router.put("/update", updateUserLogin);
 router.post("/logout", logout);
+app.get("/verify", verifyToken);
 
 export default router;
