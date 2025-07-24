@@ -21,8 +21,8 @@ export const login = async (req, res) => {
 
   res
     .cookie("token", token, {
-      httpOnly: false,
-      secure: false,
+      httpOnly: true,
+      secure: true,
     })
     .status(200)
     .json({ message: "تم تسجيل الدخول بنجاح", token });
