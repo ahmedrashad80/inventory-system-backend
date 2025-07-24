@@ -23,6 +23,7 @@ export const login = async (req, res) => {
     .cookie("token", token, {
       httpOnly: true,
       secure: true,
+      sameSite: "None",
     })
     .status(200)
     .json({ message: "تم تسجيل الدخول بنجاح", token });
