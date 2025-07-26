@@ -11,6 +11,8 @@ import {
   getAllManufacturedProducts,
   getUnitsByBatchNumber,
   getAllProductsUnits,
+  sellSelectedUnits,
+  getSalesHistory,
 } from "../controllers/manufacturing.controller.js";
 
 const router = express.Router();
@@ -23,5 +25,6 @@ router.post("/manufacture", manufactureProduct);
 router.get("/manufacture", getAllManufacturedProducts);
 router.get("/units/batch/:batchNo", getUnitsByBatchNumber);
 router.get("/units", getAllProductsUnits);
-
+router.post("/sell", sellSelectedUnits);
+router.get("/sell", getSalesHistory);
 export default router;

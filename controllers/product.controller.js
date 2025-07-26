@@ -4,7 +4,7 @@ import { handleImageUpload } from "../utils/uploadHandler.js";
 // ➕ إضافة منتج جديد
 export const createProduct = async (req, res) => {
   try {
-    const { code, name, description, components } = req.body;
+    const { code, name, description, components, price } = req.body;
     const image = handleImageUpload(req);
 
     // تأكد أن المكونات في شكل JSON إذا أتت كـ String
@@ -16,6 +16,7 @@ export const createProduct = async (req, res) => {
       name,
       description,
       image,
+      price,
       components: parsedComponents,
     });
 
@@ -46,13 +47,14 @@ export const getAllProducts = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { code, name, description, components } = req.body;
+    const { code, name, description, components, price } = req.body;
     const image = handleImageUpload(req);
 
     const product = await Product.findById(id);
     if (!product) return res.status(404).json({ message: "المنتج غير موجود" });
 
     if (image) product.image = image;
+    if (price) product.price = price;
     if (code) product.code = code;
     if (name) product.name = name;
     if (description) product.description = description;

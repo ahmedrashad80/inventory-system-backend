@@ -3,30 +3,33 @@ import AdminUser from "../models/AdminUser.model.js";
 
 export const login = async (req, res) => {
   const { username, password } = req.body;
+  try {
+    const admin = await AdminUser.findOne({ username });
+    if (!admin || admin.password !== password) {
+      return res
+        .status(401)
+        .json({ message: "اسم المستخدم او كلمة المرور غير صحيح" });
+    }
 
-  const admin = await AdminUser.findOne({ username });
-  if (!admin || admin.password !== password) {
-    return res
-      .status(401)
-      .json({ message: "اسم المستخدم او كلمة المرور غير صحيح" });
+    const token = jwt.sign(
+      { id: admin._id, username: admin.username },
+      process.env.JWT_SECRET
+    );
+    //   const token = jwt.sign({ username: admin.username }, process.env.JWT_SECRET, {
+    //     expiresIn: "30d",
+    //   });
+
+    res
+      .cookie("token", token, {
+        httpOnly: false,
+        secure: true,
+        sameSite: "None",
+      })
+      .status(200)
+      .json({ message: "تم تسجيل الدخول بنجاح", token });
+  } catch (error) {
+    res.status(500).json({ message: "فشل في تسجيل الدخول", error });
   }
-
-  const token = jwt.sign(
-    { id: admin._id, username: admin.username },
-    process.env.JWT_SECRET
-  );
-  //   const token = jwt.sign({ username: admin.username }, process.env.JWT_SECRET, {
-  //     expiresIn: "30d",
-  //   });
-
-  res
-    .cookie("token", token, {
-      httpOnly: false,
-      secure: true,
-      sameSite: "None",
-    })
-    .status(200)
-    .json({ message: "تم تسجيل الدخول بنجاح", token });
 };
 
 export const updateUserLogin = async (req, res) => {

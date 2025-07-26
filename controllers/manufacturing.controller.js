@@ -4,6 +4,7 @@ import Component from "../models/component.model.js";
 import ComponentMovement from "../models/componentMovement.model.js";
 import ManufacturingRecord from "../models/ManufacturingRecord.model.js";
 import ProductUnit from "../models/productUnit.model.js";
+import salesModel from "../models/sales.model.js";
 
 export const manufactureProduct = async (req, res) => {
   const session = await mongoose.startSession();
@@ -140,20 +141,108 @@ export const getUnitsByBatchNumber = async (req, res) => {
 export const getAllProductsUnits = async (req, res) => {
   try {
     const units = await ProductUnit.find()
-      .populate("product", "name code")
+      .populate("product", "_id name code description price")
       .sort({ date_produced: -1 });
 
-    // if (units.length === 0) {
-    //   return res.status(404).json({ message: "لا توجد وحدات منتجات" });
-    // }
     const totalUnits = units.length;
+
+    const productCounts = units.reduce((acc, unit) => {
+      if (!unit.product) return acc; // skip if product not found
+
+      const productId = unit.product._id.toString();
+
+      if (acc[productId]) {
+        acc[productId].count += 1;
+        acc[productId].units.push(unit._id);
+      } else {
+        acc[productId] = {
+          count: 1,
+          product: unit.product,
+          units: [unit._id],
+        };
+      }
+
+      return acc;
+    }, {});
+
+    for (const key in productCounts) {
+      productCounts[key].units.reverse();
+    }
 
     res.status(200).json({
       message: "تم جلب جميع وحدات المنتجات بنجاح",
       total: totalUnits,
       units,
+      productCounts,
     });
   } catch (error) {
-    res.status(500).json({ message: "فشل في جلب وحدات المنتج", error });
+    res.status(500).json({
+      message: "فشل في جلب وحدات المنتج",
+      error,
+    });
+  }
+};
+
+export const sellSelectedUnits = async (req, res) => {
+  try {
+    const { items } = req.body;
+    // items: [{ productId, unitIds: [] }]
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "الرجاء تحديد المنتجات والوحدات للبيع" });
+    }
+
+    const saleItems = [];
+
+    for (const { productId, unitIds } of items) {
+      if (!unitIds || unitIds.length === 0) continue;
+
+      const units = await ProductUnit.find({
+        _id: { $in: unitIds },
+        product: productId,
+      });
+
+      if (units.length !== unitIds.length) {
+        return res.status(400).json({
+          message: `بعض الوحدات المحددة غير موجودة للمنتج: ${productId}`,
+        });
+      }
+
+      // Delete the sold units
+      await ProductUnit.deleteMany({ _id: { $in: unitIds } });
+
+      const product = await Product.findById(productId);
+      const unitPrice = product.price;
+      const totalPrice = unitPrice * unitIds.length;
+
+      saleItems.push({
+        product: productId,
+        quantity: unitIds.length,
+        unitPrice,
+        totalPrice,
+      });
+    }
+
+    const sale = await salesModel.create({ items: saleItems });
+
+    res.status(200).json({
+      message: "تم تنفيذ عملية البيع بنجاح",
+      sale,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "حدث خطأ أثناء تنفيذ البيع", error });
+  }
+};
+
+export const getSalesHistory = async (req, res) => {
+  try {
+    const sales = await salesModel.find().populate("items.product");
+    res.status(200).json(sales);
+  } catch (error) {
+    console.error("Error fetching sales history:", error);
+    res.status(500).json({ message: "فشل في جلب تاريخ المبيعات", error });
   }
 };
