@@ -4,7 +4,7 @@ import AdminUser from "../models/AdminUser.model.js";
 export const login = async (req, res) => {
   const { username, password } = req.body;
   try {
-    const admin = await AdminUser.findOne({ username });
+    const admin = await AdminUser.findOne({ username: username.trim() });
     if (!admin || admin.password !== password) {
       return res
         .status(401)
