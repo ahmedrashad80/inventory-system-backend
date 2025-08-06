@@ -20,7 +20,6 @@ const router = express.Router();
 
 router.post("/", upload.array("image", 5), createProduct);
 router.get("/", getAllProducts);
-router.get("/:id", getProductById);
 router.put("/:id", upload.array("image", 5), updateProduct);
 router.delete("/:id", deleteProduct);
 router.post("/manufacture", manufactureProduct);
@@ -29,4 +28,5 @@ router.get("/units/batch/:batchNo", getUnitsByBatchNumber);
 router.get("/units", getAllProductsUnits);
 router.post("/sell", sellSelectedUnits);
 router.get("/sell", getSalesHistory);
+router.get("/:id", getProductById);
 export default router;
