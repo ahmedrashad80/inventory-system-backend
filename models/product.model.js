@@ -2,14 +2,11 @@ import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
   {
-    // i think we need add prrice now
-    // and add it to the productUnit model
-    // and add it to the manufacturingRecord model
-
     code: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     description: String,
-    image: String,
+
+    image: [{ type: String }],
     price: { type: Number, required: true, default: 0 },
 
     components: [

@@ -5,7 +5,7 @@ import { handleImageUpload } from "../utils/uploadHandler.js";
 export const createProduct = async (req, res) => {
   try {
     const { code, name, description, components, price } = req.body;
-    const image = handleImageUpload(req);
+    const image = await handleImageUpload(req);
 
     // تأكد أن المكونات في شكل JSON إذا أتت كـ String
     const parsedComponents =
@@ -35,6 +35,7 @@ export const createProduct = async (req, res) => {
 export const getAllProducts = async (req, res) => {
   try {
     const products = await Product.find().populate("components.component");
+
     res.status(200).json(products);
   } catch (error) {
     res
@@ -48,7 +49,7 @@ export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const { code, name, description, components, price } = req.body;
-    const image = handleImageUpload(req);
+    const image = await handleImageUpload(req);
 
     const product = await Product.findById(id);
     if (!product) return res.status(404).json({ message: "المنتج غير موجود" });
@@ -86,5 +87,24 @@ export const deleteProduct = async (req, res) => {
     res
       .status(500)
       .json({ message: "فشل في حذف المنتج", error: error.message });
+  }
+};
+
+// get product by id
+export const getProductById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const product = await Product.findById(id).populate("components.component");
+    if (!product) {
+      return res.status(404).json({ message: "المنتج غير موجود." });
+    }
+    res.status(200).json({
+      message: "تم جلب المنتج بنجاح.",
+      product,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "فشل في جلب المنتج", error: error.message });
   }
 };

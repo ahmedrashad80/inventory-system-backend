@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import componentRoutes from "./routes/component.routes.js";
 import productRoutes from "./routes/product.routes.js";
 import loginRoutes from "./routes/login.routes.js";
+import orderRoutes from "./routes/order.routes.js";
 // import protect from "./middlewares/auth.js";
 
 dotenv.config();
@@ -14,7 +15,12 @@ const app = express();
 app.use(
   cors({
     // origin: "http://localhost:8080",
-    origin: "https://inventory-system-jet-tau.vercel.app",
+
+    origin: [
+      "https://bm-store-arabic.vercel.app",
+      "https://inventory-system-jet-tau.vercel.app",
+    ],
+
     credentials: true,
   })
 );
@@ -25,6 +31,7 @@ app.use(cookieParser());
 app.use("/api/user", loginRoutes);
 app.use("/api/components", componentRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/orders", orderRoutes);
 app.use("/uploads", express.static("uploads"));
 
 mongoose
