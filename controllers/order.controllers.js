@@ -1,10 +1,23 @@
 import Order from "../models/order.model.js";
+import Shipping from "../models/shipping.model.js";
 
 export const createOrder = async (req, res) => {
   try {
     const { customerName, phone, address, governorate, notes, products } =
       req.body;
 
+    if (!governorate) {
+      return res.status(400).json({ message: "المحافظة مطلوبة." });
+    }
+    const shipping = await Shipping.findOne();
+    if (!shipping) {
+      return res.status(404).json({ message: "لا توجد بيانات شحن." });
+    }
+    const gov = shipping.governorates.find((g) => g.name === governorate);
+    if (!gov) {
+      return res.status(404).json({ message: "المحافظة غير موجودة." });
+    }
+    console.log("Governorate found:", gov);
     if (!customerName || customerName.length < 3) {
       return res
         .status(400)
@@ -49,7 +62,8 @@ export const createOrder = async (req, res) => {
       notes,
       products: customerOrder,
       invoiceNumber,
-      totalPrice,
+      shippingCost: gov.shippingCost,
+      totalPrice: totalPrice + gov.shippingCost,
     });
 
     res.status(200).json({

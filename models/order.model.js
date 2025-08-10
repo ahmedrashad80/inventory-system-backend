@@ -54,6 +54,16 @@ const orderSchema = new mongoose.Schema(
       enum: ["معلق", "تم الشحن", "مؤكد", "ملغي", "راجع"],
       default: "معلق",
     },
+    shippingCost: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    totalPrice: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
   },
   {
     timestamps: true,
