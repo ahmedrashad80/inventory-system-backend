@@ -33,7 +33,7 @@ const orderSchema = new mongoose.Schema(
     },
     notes: {
       type: String,
-      default: "",
+      default: "لا يوجد",
     },
     invoiceNumber: {
       type: String,
@@ -49,6 +49,11 @@ const orderSchema = new mongoose.Schema(
         code: String,
       },
     ],
+    status: {
+      type: String,
+      enum: ["معلق", "تم الشحن", "مؤكد", "ملغي", "راجع"],
+      default: "معلق",
+    },
   },
   {
     timestamps: true,

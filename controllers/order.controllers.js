@@ -102,27 +102,39 @@ export const getOrderById = async (req, res) => {
 export const updateOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const { customerName, phone, address, governorate, notes, products } =
-      req.body;
+    const {
+      customerName,
+      phone,
+      address,
+      governorate,
+      notes,
+      products,
+      status,
+    } = req.body;
     const order = await Order.findById(id);
     if (!order) {
       return res.status(404).json({ message: "الطلب غير موجود." });
     }
     if (customerName) order.customerName = customerName;
-    // make validation for phone
-    phone = phone.replace(/\s+/g, ""); // remove all spaces
-    if (phone.startsWith("+20")) {
-      phone = phone.replace("+20", "0");
+
+    if (phone) {
+      // make validation for phone
+      let sanitizedPhone = phone.replace(/\s+/g, ""); // remove all spaces
+      if (sanitizedPhone.startsWith("+20")) {
+        sanitizedPhone = sanitizedPhone.replace("+20", "0");
+      }
+
+      if (!/^(010|011|012|015)[0-9]{8}$/.test(sanitizedPhone)) {
+        return res.status(400).json({ message: "رقم الهاتف غير صالح." });
+      }
+      order.phone = sanitizedPhone;
     }
-    if (!/^(010|011|012|015)[0-9]{8}$/.test(phone)) {
-      return res.status(400).json({ message: "رقم الهاتف غير صالح." });
-    }
-    order.phone = phone;
 
     if (address) order.address = address;
     if (governorate) order.governorate = governorate;
     if (notes) order.notes = notes;
     if (products) order.products = products;
+    if (status) order.status = status.trim(); // أضف هذا السطر
     await order.save();
     res.status(200).json({ message: "تم تحديث الطلب بنجاح.", order });
   } catch (error) {
