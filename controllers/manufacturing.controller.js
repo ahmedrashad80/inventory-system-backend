@@ -142,8 +142,6 @@ export const getAllProductsUnits = async (req, res) => {
       .populate("product", "_id name code description price")
       .sort({ date_produced: -1 });
 
-    const totalUnits = units.length;
-
     const productCounts = units.reduce((acc, unit) => {
       if (!unit.product) return acc; // skip if product not found
 
@@ -167,6 +165,10 @@ export const getAllProductsUnits = async (req, res) => {
       productCounts[key].units.reverse();
     }
 
+    const totalUnits = Object.values(productCounts).reduce(
+      (total, item) => total + item.count,
+      0
+    );
     res.status(200).json({
       message: "تم جلب جميع وحدات المنتجات بنجاح",
       total: totalUnits,
