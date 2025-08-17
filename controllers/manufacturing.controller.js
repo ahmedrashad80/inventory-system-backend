@@ -61,9 +61,10 @@ export const manufactureProduct = async (req, res) => {
     // 5. Create product units
     const productUnits = [];
     for (let i = 1; i <= quantity; i++) {
-      const serial_number = `${product.code}-${Date.now()}-${i
-        .toString()
-        .padStart(3, "0")}`;
+      const serial_number = `${product.code}-${new Date()
+        .toISOString()
+        .slice(0, 10)
+        .replace(/-/g, "")}-${i.toString().padStart(3, "0")}`;
       productUnits.push({
         serial_number,
         product: product._id,
@@ -239,7 +240,12 @@ export const sellSelectedUnits = async (req, res) => {
 
 export const getSalesHistory = async (req, res) => {
   try {
-    const sales = await salesModel.find().populate("items.product");
+    // i want to show the last operations of sales is shown first
+    const sales = await salesModel
+      .find()
+      .sort({ createdAt: -1 })
+      .populate("items.product");
+    // const sales = await salesModel.find().populate("items.product");
     res.status(200).json(sales);
   } catch (error) {
     console.error("Error fetching sales history:", error);
