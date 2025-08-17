@@ -61,10 +61,7 @@ export const manufactureProduct = async (req, res) => {
     // 5. Create product units
     const productUnits = [];
     for (let i = 1; i <= quantity; i++) {
-      const serial_number = `${product.code}-${new Date()
-        .toISOString()
-        .slice(0, 10)
-        .replace(/-/g, "")}-${i.toString().padStart(3, "0")}`;
+      const serial_number = `${batch_no}-${i.toString().padStart(3, "0")}`;
       productUnits.push({
         serial_number,
         product: product._id,
