@@ -22,6 +22,14 @@ const componentSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    selling_price: {
+      type: Number,
+      default: function () {
+        return this.unit_price + 20;
+      },
+      // default: 0,
+    },
     supplier: {
       type: String,
       default: "",

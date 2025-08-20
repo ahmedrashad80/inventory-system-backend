@@ -4,13 +4,23 @@ import { handleImageUpload } from "../utils/uploadHandler.js";
 // إنشاء مكون جديد
 export const createComponent = async (req, res) => {
   try {
-    const { code, name, quantity, unit_price, supplier } = req.body;
-    const imagePath = handleImageUpload(req);
+    const { code, name, quantity, unit_price, supplier, selling_price } =
+      req.body;
+    const images = await handleImageUpload(req);
+    const imagePath = images && images.length > 0 ? images[0] : null;
+
+    if (selling_price && selling_price <= unit_price) {
+      return res
+        .status(400)
+        .json({ message: "سعر البيع يجب أن يكون أكبر من " });
+    }
+
     const component = new Component({
       code,
       name,
       quantity,
       unit_price,
+      selling_price,
       supplier,
       image: imagePath,
     });
@@ -35,7 +45,15 @@ export const getAllComponents = async (req, res) => {
 export const updateComponent = async (req, res) => {
   try {
     const { id } = req.params;
-    const { code, name, quantity, unit_price, supplier, reason } = req.body;
+    const {
+      code,
+      name,
+      quantity,
+      unit_price,
+      supplier,
+      reason,
+      selling_price,
+    } = req.body;
 
     // ابحث عن المكون الحالي
     const component = await Component.findById(id);
@@ -49,12 +67,14 @@ export const updateComponent = async (req, res) => {
       name: component.name,
       quantity: component.quantity,
       unit_price: component.unit_price,
+      selling_price: component.selling_price,
       supplier: component.supplier,
       image: component.image,
     };
 
     // تحديث الصورة لو تم رفع صورة جديدة
-    const imagePath = handleImageUpload(req);
+    const images = await handleImageUpload(req);
+    const imagePath = images && images.length > 0 ? images[0] : null;
     if (imagePath) {
       component.image = imagePath;
     }
@@ -64,6 +84,7 @@ export const updateComponent = async (req, res) => {
     if (name) component.name = name;
     if (quantity !== undefined) component.quantity = quantity;
     if (unit_price !== undefined) component.unit_price = unit_price;
+    if (selling_price !== undefined) component.selling_price = selling_price;
     if (supplier) component.supplier = supplier;
     if (reason) component.reason = reason;
 
