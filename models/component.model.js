@@ -34,9 +34,10 @@ const componentSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    image: {
-      type: String,
-      default: "",
+    image: [{ type: String }],
+    store: {
+      type: Boolean,
+      default: true,
     },
   },
   {

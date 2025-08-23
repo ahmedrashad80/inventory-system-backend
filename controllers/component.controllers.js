@@ -1,13 +1,14 @@
 import Component from "../models/component.model.js";
 import ComponentMovement from "../models/componentMovement.model.js";
+import productModel from "../models/product.model.js";
 import { handleImageUpload } from "../utils/uploadHandler.js";
 // إنشاء مكون جديد
 export const createComponent = async (req, res) => {
   try {
-    const { code, name, quantity, unit_price, supplier, selling_price } =
+    const { code, name, quantity, unit_price, supplier, selling_price, store } =
       req.body;
     const images = await handleImageUpload(req);
-    const imagePath = images && images.length > 0 ? images[0] : null;
+    // const imagePath = images && images.length > 0 ? images[0] : null;
 
     if (selling_price && selling_price <= unit_price) {
       return res
@@ -22,7 +23,8 @@ export const createComponent = async (req, res) => {
       unit_price,
       selling_price,
       supplier,
-      image: imagePath,
+      image: images.length > 0 ? [images[0]] : [],
+      store: store !== undefined ? store : true,
     });
 
     await component.save();
@@ -41,7 +43,50 @@ export const getAllComponents = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// get components that has store true to show in store
+export const getStoreComponents = async (req, res) => {
+  try {
+    const components = await Component.find({ store: true });
+    res.status(200).json(components);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
+// جلب مكون حسب ID
+export const getComponentById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const component = await Component.findById(id);
+    if (!component) {
+      return res.status(404).json({ message: "المكون غير موجود" });
+    }
+    res.status(200).json(component);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// جلب مكونات حسب ID المنتج
+export const getComponentsByProductId = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const product = await productModel
+      .findById(id)
+      .populate("components.component");
+    if (!product) {
+      return res.status(404).json({ message: "المنتج غير موجود" });
+    }
+    const components = product.components;
+    if (!components || components.length === 0) {
+      return res.status(404).json({ message: "لا توجد مكونات لهذا المنتج" });
+    }
+
+    res.status(200).json(components);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 export const updateComponent = async (req, res) => {
   try {
     const { id } = req.params;
@@ -53,6 +98,7 @@ export const updateComponent = async (req, res) => {
       supplier,
       reason,
       selling_price,
+      store,
     } = req.body;
 
     // ابحث عن المكون الحالي
@@ -70,13 +116,17 @@ export const updateComponent = async (req, res) => {
       selling_price: component.selling_price,
       supplier: component.supplier,
       image: component.image,
+      store: component.store,
     };
 
     // تحديث الصورة لو تم رفع صورة جديدة
     const images = await handleImageUpload(req);
-    const imagePath = images && images.length > 0 ? images[0] : null;
-    if (imagePath) {
-      component.image = imagePath;
+    // const imagePath = images && images.length > 0 ? images[0] : null;
+    // if (imagePath) {
+    //   component.image = imagePath;
+    // }
+    if (images && images.length > 0) {
+      component.image = images;
     }
 
     // تحديث باقي الحقول
@@ -87,6 +137,7 @@ export const updateComponent = async (req, res) => {
     if (selling_price !== undefined) component.selling_price = selling_price;
     if (supplier) component.supplier = supplier;
     if (reason) component.reason = reason;
+    if (store !== undefined) component.store = store;
 
     await component.save();
 

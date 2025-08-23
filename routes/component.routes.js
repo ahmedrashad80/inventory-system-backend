@@ -8,17 +8,23 @@ import {
   stockInComponent,
   adjustComponentStock,
   getComponentMovements,
+  getComponentById,
+  getComponentsByProductId,
+  getStoreComponents,
 } from "../controllers/component.controllers.js";
 
 const router = express.Router();
 
-router.post("/", upload.single("image"), createComponent);
+router.post("/", upload.array("images", 1), createComponent);
 router.get("/", getAllComponents);
-router.put("/:id", upload.single("image"), updateComponent);
+router.get("/store", getStoreComponents);
+router.get("/movements", getComponentMovements);
+router.get("/product/:id", getComponentsByProductId);
+router.get("/:id", getComponentById);
+router.put("/:id", upload.array("images", 1), updateComponent);
 router.delete("/:id", deleteComponent);
 
 router.post("/:id/stock-in", stockInComponent);
 router.post("/:id/adjust", adjustComponentStock);
-router.get("/movements", getComponentMovements);
 
 export default router;

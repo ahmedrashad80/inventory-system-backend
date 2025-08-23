@@ -1,4 +1,9 @@
+import mongoose from "mongoose";
+import Component from "../models/component.model.js";
+import componentMovementModel from "../models/componentMovement.model.js";
 import Order from "../models/order.model.js";
+import productModel from "../models/product.model.js";
+import productUnitModel from "../models/productUnit.model.js";
 import Shipping from "../models/shipping.model.js";
 
 export const createOrder = async (req, res) => {
@@ -17,7 +22,6 @@ export const createOrder = async (req, res) => {
     if (!gov) {
       return res.status(404).json({ message: "المحافظة غير موجودة." });
     }
-    console.log("Governorate found:", gov);
     if (!customerName || customerName.length < 3) {
       return res
         .status(400)
@@ -43,9 +47,10 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "يجب إضافة منتجات للطلب." });
     }
     const customerOrder = products.map((product) => ({
+      productId: product._id,
       code: product.code,
       name: product.name,
-      price: product.price,
+      price: product.price || product.selling_price,
       quantity: product.quantity,
     }));
 
@@ -113,7 +118,11 @@ export const getOrderById = async (req, res) => {
 };
 
 // update order
+
 export const updateOrder = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { id } = req.params;
     const {
@@ -125,19 +134,23 @@ export const updateOrder = async (req, res) => {
       products,
       status,
     } = req.body;
-    const order = await Order.findById(id);
+
+    const order = await Order.findById(id).session(session);
     if (!order) {
       return res.status(404).json({ message: "الطلب غير موجود." });
     }
+
+    // نطبّق trim مرة واحدة ونستخدمها في المقارنات والتحديث
+    const nextStatus = typeof status === "string" ? status.trim() : undefined;
+
+    // تحديث بيانات العميل
     if (customerName) order.customerName = customerName;
 
     if (phone) {
-      // make validation for phone
-      let sanitizedPhone = phone.replace(/\s+/g, ""); // remove all spaces
+      let sanitizedPhone = phone.replace(/\s+/g, "");
       if (sanitizedPhone.startsWith("+20")) {
         sanitizedPhone = sanitizedPhone.replace("+20", "0");
       }
-
       if (!/^(010|011|012|015)[0-9]{8}$/.test(sanitizedPhone)) {
         return res.status(400).json({ message: "رقم الهاتف غير صالح." });
       }
@@ -147,14 +160,127 @@ export const updateOrder = async (req, res) => {
     if (address) order.address = address;
     if (governorate) order.governorate = governorate;
     if (notes) order.notes = notes;
-    if (products) order.products = products;
-    if (status) order.status = status.trim(); // أضف هذا السطر
-    await order.save();
+    if (products) order.products = products; // لو بتعدّل المنتجات مع الحالة، الخصم هيتم على اللستة المحدثة
+
+    // ========== التعامل مع المخزون ==========
+    if (nextStatus && nextStatus !== order.status) {
+      // 1) لو الحالة أصبحت "تم الشحن" ولم تكن كذلك قبلها → خصم
+      if (nextStatus === "تم الشحن" && order.status !== "تم الشحن") {
+        for (const item of order.products) {
+          const product = await productModel
+            .findById(item.productId)
+            .session(session);
+
+          if (product) {
+            // منتج رئيسي → خصم وحدات (FIFO)
+            const units = await productUnitModel
+              .find({ product: item.productId })
+              .sort({ createdAt: 1 })
+              .limit(item.quantity)
+              .session(session);
+
+            if (units.length < item.quantity) {
+              throw new Error(`المنتج ${product.name} غير كافي في المخزن`);
+            }
+
+            const unitIds = units.map((u) => u._id);
+            await productUnitModel.deleteMany(
+              { _id: { $in: unitIds } },
+              { session }
+            );
+          } else {
+            // قطعة غيار → خصم مباشر + حركة مخزون
+            const component = await Component.findById(item.productId).session(
+              session
+            );
+            if (!component) throw new Error(`المكون ${item.name} غير موجود`);
+            if (component.quantity < item.quantity) {
+              throw new Error(`الكمية غير متوفرة للمكون ${item.name}`);
+            }
+
+            await Component.findByIdAndUpdate(
+              item.productId,
+              { $inc: { quantity: -item.quantity } },
+              { session }
+            );
+
+            await componentMovementModel.create(
+              [
+                {
+                  component: item.productId,
+                  type: "out",
+                  quantity: item.quantity,
+                  reason: "بيع من المتجر",
+                },
+              ],
+              { session }
+            );
+          }
+        }
+      }
+
+      // 2) لو الحالة تغيّرت "من تم الشحن" إلى أي شيء آخر → إرجاع المخزون
+      if (order.status === "تم الشحن" && nextStatus !== "تم الشحن") {
+        for (const item of order.products) {
+          const product = await productModel
+            .findById(item.productId)
+            .session(session);
+
+          if (product) {
+            const newBatchNumber = `BATCH-${Date.now()}-${Math.floor(
+              Math.random() * 1000
+            )}`;
+            // إرجاع وحدات المنتج (ملاحظة: لو عندك serial/batch مطلوبين في الـ schema لازم تتخزن وقت الشحن وترجع بنفسها)
+            const units = [];
+            for (let i = 0; i < item.quantity; i++) {
+              units.push({
+                product: item.productId,
+                status: "جاهز",
+                serial_number: `${newBatchNumber}-${i
+                  .toString()
+                  .padStart(3, "0")}`,
+                batch_number: newBatchNumber,
+              });
+            }
+            await productUnitModel.insertMany(units, { session });
+          } else {
+            // إرجاع كمية قطع الغيار + حركة مخزون
+            await Component.findByIdAndUpdate(
+              item.productId,
+              { $inc: { quantity: item.quantity } },
+              { session }
+            );
+
+            await componentMovementModel.create(
+              [
+                {
+                  component: item.productId,
+                  type: "in",
+                  quantity: item.quantity,
+                  reason: "مرتجع من عميل",
+                },
+              ],
+              { session }
+            );
+          }
+        }
+      }
+    }
+
+    // تحديث الحالة (لو جاية)
+    if (nextStatus) order.status = nextStatus;
+
+    await order.save({ session });
+    await session.commitTransaction();
+
     res.status(200).json({ message: "تم تحديث الطلب بنجاح.", order });
   } catch (error) {
+    await session.abortTransaction();
     res
       .status(500)
       .json({ message: "فشل في تحديث الطلب", error: error.message });
+  } finally {
+    session.endSession();
   }
 };
 // delete order
