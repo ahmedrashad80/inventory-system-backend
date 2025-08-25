@@ -52,10 +52,12 @@ export const createOrder = async (req, res) => {
       name: product.name,
       price: product.price || product.selling_price,
       quantity: product.quantity,
+      discount: product.discount || 0,
     }));
 
     const totalPrice = customerOrder.reduce(
-      (total, item) => total + item.price * item.quantity,
+      (total, item) =>
+        total + ((item.price * (100 - item.discount)) / 100) * item.quantity,
       0
     );
 

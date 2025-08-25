@@ -47,6 +47,7 @@ const orderSchema = new mongoose.Schema(
         price: Number,
         quantity: Number,
         code: String,
+        discount: { type: Number, default: 0 },
       },
     ],
     status: {

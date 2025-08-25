@@ -14,7 +14,7 @@ const imagekit = new ImageKit({
 // ➕ إضافة منتج جديد
 export const createProduct = async (req, res) => {
   try {
-    const { code, name, description, components, price } = req.body;
+    const { code, name, description, components, price, discount } = req.body;
     const image = await handleImageUpload(req);
 
     // تأكد أن المكونات في شكل JSON إذا أتت كـ String
@@ -28,6 +28,7 @@ export const createProduct = async (req, res) => {
       image,
       price,
       components: parsedComponents,
+      discount,
     });
 
     await product.save();
@@ -67,6 +68,7 @@ export const updateProduct = async (req, res) => {
       price,
       oldImages,
       deletedImages,
+      discount,
     } = req.body;
 
     // التعامل مع الصور الجديدة من Multer
@@ -80,6 +82,7 @@ export const updateProduct = async (req, res) => {
     if (code) product.code = code;
     if (name) product.name = name;
     if (description !== undefined) product.description = description;
+    if (discount !== undefined) product.discount = discount;
 
     // تحديث المكونات
     if (components) {

@@ -14,12 +14,12 @@ dotenv.config();
 const app = express();
 app.use(
   cors({
-    // origin: ["http://localhost:8081", "http://localhost:8080"],
+    origin: ["http://localhost:8081", "http://localhost:8080"],
 
-    origin: [
-      "https://bm-store-arabic.vercel.app",
-      "https://inventory-system-jet-tau.vercel.app",
-    ],
+    // origin: [
+    //   "https://bm-store-arabic.vercel.app",
+    //   "https://inventory-system-jet-tau.vercel.app",
+    // ],
 
     credentials: true,
   })
