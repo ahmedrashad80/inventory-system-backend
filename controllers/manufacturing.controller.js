@@ -142,6 +142,12 @@ export const getAllProductsUnits = async (req, res) => {
       .populate("product", "_id name code description price")
       .sort({ date_produced: -1 });
 
+    // for (const unit of units) {
+    //   if (!unit.product) {
+    //     await ProductUnit.findByIdAndDelete(unit._id);
+    //   }
+    // }
+
     const productCounts = units.reduce((acc, unit) => {
       if (!unit.product) return acc; // skip if product not found
 

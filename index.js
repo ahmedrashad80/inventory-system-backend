@@ -8,6 +8,7 @@ import productRoutes from "./routes/product.routes.js";
 import loginRoutes from "./routes/login.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import shippingRoutes from "./routes/shipping.routes.js";
+import traderRoutes from "./routes/trader.routes.js";
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use("/api/components", componentRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/shipping", shippingRoutes);
+app.use("/api/traders", traderRoutes);
 app.use("/uploads", express.static("uploads"));
 
 mongoose

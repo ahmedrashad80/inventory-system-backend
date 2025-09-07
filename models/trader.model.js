@@ -1,32 +1,17 @@
 import mongoose from "mongoose";
 const traderSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, minlength: 3 },
+    name: { type: String, required: true, minlength: 3, unique: true },
     phone: {
       type: String,
       required: true,
     },
     address: { type: String, required: true },
-    businessType: { type: String },
-    discountPercentage: { type: Number, default: 0 }, // خصم عام
-    customPrices: [
-      {
-        // أسعار مخصصة لمنتجات معينة
-        productId: mongoose.Schema.Types.ObjectId,
-        price: Number,
-      },
-    ],
+    notes: { type: String, default: "لا يوجد" },
 
-    // الحسابات المالية
-    totalDebt: { type: Number, default: 0 },
+    totalBalance: { type: Number, default: 0 },
     totalPaid: { type: Number, default: 0 },
     totalOrders: { type: Number, default: 0 },
-
-    status: {
-      type: String,
-      enum: ["active", "inactive", "blocked"],
-      default: "active",
-    },
   },
   { timestamps: true }
 );
