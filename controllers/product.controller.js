@@ -14,7 +14,7 @@ const imagekit = new ImageKit({
 // ➕ إضافة منتج جديد
 export const createProduct = async (req, res) => {
   try {
-    const { code, name, description, components, price, discount } = req.body;
+    const { code, name, description, components, price, discount, category } = req.body;
     const image = await handleImageUpload(req);
 
     // تأكد أن المكونات في شكل JSON إذا أتت كـ String
@@ -25,6 +25,7 @@ export const createProduct = async (req, res) => {
       code,
       name,
       description,
+      category: category || null,
       image,
       price,
       components: parsedComponents,
@@ -42,10 +43,14 @@ export const createProduct = async (req, res) => {
   }
 };
 
-// 📄 عرض كل المنتجات + مكوناتهم
+// 📄 عرض كل المنتجات + مكوناتهم (مع فلترة اختيارية حسب القسم)
 export const getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find().populate("components.component");
+    const { category } = req.query;
+    const query = category ? { category } : {};
+    const products = await Product.find(query)
+      .populate("components.component")
+      .populate("category");
 
     res.status(200).json(products);
   } catch (error) {
@@ -69,6 +74,7 @@ export const updateProduct = async (req, res) => {
       oldImages,
       deletedImages,
       discount,
+      category,
     } = req.body;
 
     // التعامل مع الصور الجديدة من Multer
@@ -83,6 +89,7 @@ export const updateProduct = async (req, res) => {
     if (name) product.name = name;
     if (description !== undefined) product.description = description;
     if (discount !== undefined) product.discount = discount;
+    if (category !== undefined) product.category = category || null;
 
     // تحديث المكونات
     if (components) {
@@ -179,7 +186,9 @@ export const deleteProduct = async (req, res) => {
 export const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
-    const product = await Product.findById(id).populate("components.component");
+    const product = await Product.findById(id)
+      .populate("components.component")
+      .populate("category");
     if (!product) {
       return res.status(404).json({ message: "المنتج غير موجود." });
     }
