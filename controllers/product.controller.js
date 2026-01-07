@@ -14,7 +14,7 @@ const imagekit = new ImageKit({
 // ➕ إضافة منتج جديد
 export const createProduct = async (req, res) => {
   try {
-    const { code, name, description, components, price, discount, category } = req.body;
+    const { code, name, description, components, price, discount, category, hasSpecialOfferToday } = req.body;
     const image = await handleImageUpload(req);
 
     // تأكد أن المكونات في شكل JSON إذا أتت كـ String
@@ -30,6 +30,7 @@ export const createProduct = async (req, res) => {
       price,
       components: parsedComponents,
       discount,
+      hasSpecialOfferToday,
     });
 
     await product.save();
@@ -46,8 +47,11 @@ export const createProduct = async (req, res) => {
 // 📄 عرض كل المنتجات + مكوناتهم (مع فلترة اختيارية حسب القسم)
 export const getAllProducts = async (req, res) => {
   try {
-    const { category } = req.query;
-    const query = category ? { category } : {};
+    const { category, hasSpecialOfferToday } = req.query;
+    const query = {};
+    if (category) query.category = category;
+    if (hasSpecialOfferToday === "true") query.hasSpecialOfferToday = true;
+
     const products = await Product.find(query)
       .populate("components.component")
       .populate("category");
@@ -75,6 +79,7 @@ export const updateProduct = async (req, res) => {
       deletedImages,
       discount,
       category,
+      hasSpecialOfferToday,
     } = req.body;
 
     // التعامل مع الصور الجديدة من Multer
@@ -90,6 +95,7 @@ export const updateProduct = async (req, res) => {
     if (description !== undefined) product.description = description;
     if (discount !== undefined) product.discount = discount;
     if (category !== undefined) product.category = category || null;
+    if (hasSpecialOfferToday !== undefined) product.hasSpecialOfferToday = hasSpecialOfferToday;
 
     // تحديث المكونات
     if (components) {

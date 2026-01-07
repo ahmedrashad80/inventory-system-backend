@@ -10,6 +10,7 @@ import orderRoutes from "./routes/order.routes.js";
 import shippingRoutes from "./routes/shipping.routes.js";
 import traderRoutes from "./routes/trader.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
+import systemSettingsRoutes from "./routes/systemSettings.route.js";
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/shipping", shippingRoutes);
 app.use("/api/traders", traderRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/settings", systemSettingsRoutes);
 app.use("/uploads", express.static("uploads"));
 
 mongoose
