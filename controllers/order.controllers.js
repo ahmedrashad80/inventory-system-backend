@@ -37,29 +37,43 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "رقم الهاتف غير صالح." });
     }
 
-    const count = await Order.countDocuments();
-    const invoiceNumber = `INV-${new Date()
-      .toISOString()
-      .slice(0, 10)
-      .replace(/-/g, "")}-${(count + 1).toString().padStart(4, "0")}`;
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const lastOrder = await Order.findOne().sort({ invoiceNumber: -1 });
+    let nextNum = 1;
+    if (lastOrder && lastOrder.invoiceNumber && lastOrder.invoiceNumber.includes(today)) {
+      const parts = lastOrder.invoiceNumber.split("-");
+      const lastNum = parseInt(parts[parts.length - 1], 10);
+      if (!isNaN(lastNum)) nextNum = lastNum + 1;
+    }
+    const invoiceNumber = `INV-${today}-${nextNum.toString().padStart(4, "0")}`;
 
     if (!products || products.length === 0) {
       return res.status(400).json({ message: "يجب إضافة منتجات للطلب." });
     }
-    const customerOrder = products.map((product) => ({
-      productId: product._id,
-      code: product.code,
-      name: product.name,
-      price: product.price || product.selling_price,
-      quantity: product.quantity,
-      discount: product.discount || 0,
-    }));
+    const customerOrder = products.map((product) => {
+      const price = Number(product.price || product.selling_price || 0);
+      const discount = Number(product.discount || 0);
+      const quantity = Number(product.quantity || 1);
+      
+      return {
+        productId: product._id,
+        code: product.code,
+        name: product.name,
+        price: price,
+        quantity: quantity,
+        discount: discount,
+      };
+    });
 
     const totalPrice = customerOrder.reduce(
       (total, item) =>
         total + ((item.price * (100 - item.discount)) / 100) * item.quantity,
       0
     );
+
+    if (isNaN(totalPrice)) {
+       throw new Error("فشل في حساب إجمالي الطلب - بيانات المنتجات غير صحيحة");
+    }
 
     const order = await Order.create({
       customerName,
@@ -69,8 +83,8 @@ export const createOrder = async (req, res) => {
       notes,
       products: customerOrder,
       invoiceNumber,
-      shippingCost: gov.shippingCost,
-      totalPrice: totalPrice + gov.shippingCost,
+      shippingCost: Number(gov.shippingCost || 0),
+      totalPrice: totalPrice + Number(gov.shippingCost || 0),
     });
 
     res.status(200).json({
