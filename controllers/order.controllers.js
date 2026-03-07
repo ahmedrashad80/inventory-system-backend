@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
 import Component from "../models/component.model.js";
 import componentMovementModel from "../models/componentMovement.model.js";
 import Order from "../models/order.model.js";
@@ -95,6 +96,64 @@ export const createOrder = async (req, res) => {
       shippingCost: Number(gov.shippingCost || 0),
       totalPrice: totalPrice + Number(gov.shippingCost || 0),
     });
+
+    // --- Facebook Conversions API (Server-Side Tracking) ---
+    try {
+      const pixelId = process.env.FACEBOOK_PIXEL_ID;
+      const accessToken = process.env.FACEBOOK_ACCESS_TOKEN;
+      
+      if (pixelId && accessToken) {
+        const clientIp = req.ip || req.connection.remoteAddress;
+        const userAgent = req.headers['user-agent'] || '';
+        
+        // تنسيق الرقم عشان فيسبوك بيفضل كود الدولة (لمصر: 20)
+        let phForFB = sanitizedPhone;
+        if (phForFB.startsWith('0')) {
+          phForFB = '2' + phForFB; 
+        }
+
+        // التشفير بـ SHA256 (مطلوب من فيسبوك)
+        const hashedPhone = crypto.createHash('sha256').update(phForFB).digest('hex');
+        const hashedName = crypto.createHash('sha256').update(customerName.toLowerCase().trim()).digest('hex');
+
+        const fbEventData = {
+          data: [
+            {
+              event_name: "Purchase",
+              event_time: Math.floor(Date.now() / 1000), // الوقت الحالي بالثواني
+              action_source: "website",
+              event_id: invoiceNumber, // الدليل الأساسي لمنع التكرار (Deduplication)
+              user_data: {
+                client_ip_address: clientIp,
+                client_user_agent: userAgent,
+                ph: [hashedPhone],
+                fn: [hashedName]
+              },
+              custom_data: {
+                currency: "EGP",
+                value: order.totalPrice,
+                content_ids: customerOrder.map(item => item.productId.toString()),
+                content_type: "product",
+                contents: customerOrder.map(item => ({
+                  id: item.productId.toString(),
+                  quantity: item.quantity,
+                  item_price: item.price
+                }))
+              }
+            }
+          ]
+        };
+
+        fetch(`https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${accessToken}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(fbEventData)
+        }).catch(err => console.error("Facebook CAPI API Error:", err)); // إخفاء الخطأ حتى لا يوقف الرد على الفرونت إند
+      }
+    } catch (fbError) {
+      console.error("Facebook CAPI preparation error:", fbError);
+    }
+    // -------------------------------------------------------
 
     res.status(200).json({
       message: "تم إنشاء الطلب بنجاح.",
