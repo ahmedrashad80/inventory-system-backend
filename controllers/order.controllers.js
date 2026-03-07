@@ -37,14 +37,23 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "رقم الهاتف غير صالح." });
     }
 
+    // 1. الحصول على تاريخ اليوم بصيغة (YYYYMMDD) لتكوين بداية رقم الفاتورة
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    const lastOrder = await Order.findOne().sort({ invoiceNumber: -1 });
+    
+    // 2. البحث عن آخر طلب تم إنشاؤه "اليوم فقط" من خلال البحث عن الفواتير اللي بتبدأ بتاريخ اليوم
+    // الـ sort({ invoiceNumber: -1 }) بيجيب الفاتورة صاحبة أعلى رقم
+    const lastOrder = await Order.findOne({ invoiceNumber: { $regex: `^INV-${today}` } })
+                                 .sort({ invoiceNumber: -1 });
+    // 3. تحديد رقم الطلب الجديد (يبدأ من 1 لو ده أول طلب في اليوم)
     let nextNum = 1;
-    if (lastOrder && lastOrder.invoiceNumber && lastOrder.invoiceNumber.includes(today)) {
+    if (lastOrder && lastOrder.invoiceNumber) {
+      // 4. لو في طلبات قبله في نفس اليوم، نقسم رقم الفاتورة وناخد آخر جزء ونزود عليه 1
       const parts = lastOrder.invoiceNumber.split("-");
       const lastNum = parseInt(parts[parts.length - 1], 10);
       if (!isNaN(lastNum)) nextNum = lastNum + 1;
     }
+    
+    // 5. تجميع رقم الفاتورة النهائي مع وضع أصفار على اليسار (مثال: INV-20231024-0001)
     const invoiceNumber = `INV-${today}-${nextNum.toString().padStart(4, "0")}`;
 
     if (!products || products.length === 0) {

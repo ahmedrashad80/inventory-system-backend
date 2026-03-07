@@ -52,7 +52,7 @@ const orderSchema = new mongoose.Schema(
     ],
     status: {
       type: String,
-      enum: ["معلق", "تم الشحن", "مؤكد", "ملغي", "راجع"],
+      enum: ["معلق", "معلق-1", "معلق-2", "تم الشحن", "مؤكد", "ملغي", "راجع"],
       default: "معلق",
     },
     shippingCost: {

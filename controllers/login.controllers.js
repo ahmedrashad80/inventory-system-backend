@@ -72,3 +72,29 @@ export const verifyToken = (req, res) => {
     res.status(401).json({ message: "التوكن غير صحيح" });
   }
 };
+
+export const addUser = async (req, res) => {
+  const { username, password, type } = req.body;
+
+  try {
+    if (!username || !password || !type) {
+      return res.status(400).json({ message: "يرجى تعبئة جميع الحقول المطلوبة" });
+    }
+
+    const existingUser = await AdminUser.findOne({ username: username.trim() });
+    if (existingUser) {
+      return res.status(400).json({ message: "اسم المستخدم موجود بالفعل" });
+    }
+
+    const newUser = new AdminUser({
+      username: username.trim(),
+      password, // Note: In a real app, hash this before saving
+      type,
+    });
+
+    await newUser.save();
+    res.status(201).json({ message: "تم إضافة المستخدم بنجاح", user: newUser });
+  } catch (error) {
+    res.status(500).json({ message: "فشل في إضافة المستخدم", error });
+  }
+};
